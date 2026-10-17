@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
