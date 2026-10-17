@@ -5,7 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CarryBee Merchant Registration</title>
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #f3f5f7;
@@ -13,28 +18,43 @@
       padding: 30px 16px;
       color: #222;
     }
+
     main {
       max-width: 440px;
       margin: 30px auto;
       padding: 24px;
       background: white;
       border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     }
+
+    h1 {
+      font-size: 26px;
+    }
+
     label {
       display: block;
       margin: 18px 0 6px;
       font-weight: bold;
     }
-    input, button {
-      box-sizing: border-box;
+
+    input,
+    button {
       width: 100%;
       padding: 12px;
       font-size: 16px;
       border-radius: 6px;
     }
+
     input {
       border: 1px solid #bbb;
     }
+
+    input:focus {
+      outline: 2px solid #9bbcfb;
+      border-color: #1769d2;
+    }
+
     button {
       margin-top: 22px;
       background: #1769d2;
@@ -42,56 +62,118 @@
       border: 0;
       cursor: pointer;
     }
+
     button:disabled {
-      opacity: .6;
+      opacity: 0.6;
+      cursor: not-allowed;
     }
-    pre {
+
+    #result {
+      margin-top: 18px;
+      padding: 12px;
+      background: #f3f5f7;
+      border-radius: 6px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
+
+    .error {
+      color: #b42318;
+      font-size: 13px;
+      margin-top: 6px;
+    }
   </style>
 </head>
+
 <body>
 <main>
   <h1>Merchant Registration</h1>
+  <p>Enter your details to register with CarryBee.</p>
 
   <form id="form">
     <label for="name">Full name</label>
-    <input id="name" name="name" maxlength="150"
-           autocomplete="name" required>
+    <input
+      id="name"
+      name="name"
+      type="text"
+      maxlength="150"
+      autocomplete="name"
+      required
+    >
+    <div id="nameError" class="error" role="alert"></div>
 
     <label for="num">Phone number</label>
-    <input id="num" name="num" type="tel" maxlength="30"
-           autocomplete="tel" required>
+    <input
+      id="num"
+      name="num"
+      type="tel"
+      maxlength="30"
+      autocomplete="tel"
+      required
+    >
 
-  
-<label for="business_name">Business name</label>
-<input
-    id="business_name"
-    name="business_name"
-    type="text"
-    minlength="3"
-    maxlength="50"
-    required
-    autocomplete="organization"
->
-
+    <label for="business_name">Business name</label>
+    <input
+      id="business_name"
+      name="business_name"
+      type="text"
+      minlength="3"
+      maxlength="50"
+      autocomplete="organization"
+      required
+    >
 
     <button id="submit" type="submit">Register</button>
   </form>
 
-  <pre id="result" aria-live="polite"></pre>
+  <pre id="result" aria-live="polite" hidden></pre>
 </main>
 
 <script>
 const form = document.getElementById('form');
+const nameInput = document.getElementById('name');
+const nameError = document.getElementById('nameError');
 const button = document.getElementById('submit');
 const result = document.getElementById('result');
 
+// Names that must not be accepted.
+const blockedNames = new Set(['gazi', 'seeyam']);
+
+function validateName() {
+  const name = nameInput.value.trim();
+  const normalizedName = name.toLocaleLowerCase();
+
+  if (blockedNames.has(normalizedName)) {
+    nameError.textContent =
+      'The name "' + name + '" is not allowed. Please enter another full name.';
+    nameInput.setCustomValidity('This full name is not allowed.');
+    return false;
+  }
+
+  nameError.textContent = '';
+  nameInput.setCustomValidity('');
+  return true;
+}
+
+nameInput.addEventListener('input', validateName);
+nameInput.addEventListener('blur', validateName);
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+
+  if (!validateName()) {
+    nameInput.reportValidity();
+    nameInput.focus();
+    return;
+  }
+
+  if (!form.reportValidity()) {
+    return;
+  }
+
   button.disabled = true;
-  result.textContent = 'Submitting...';
+  result.hidden = false;
+  result.textContent = 'Submitting registration...';
 
   try {
     const response = await fetch('/api/register.php', {
@@ -105,20 +187,24 @@ form.addEventListener('submit', async (event) => {
     try {
       data = JSON.parse(text);
     } catch {
-      throw new Error('Invalid server response. Check deployment logs.');
+      throw new Error(
+        'Invalid server response. Check your Vercel deployment logs.'
+      );
     }
 
     result.textContent = JSON.stringify(data, null, 2);
 
-    if (response.ok) {
-      form.reset();
-    } else {
+    if (!response.ok) {
       result.textContent =
         'Request failed (HTTP ' + response.status + '):\n' +
         JSON.stringify(data, null, 2);
+    } else {
+      form.reset();
+      nameError.textContent = '';
+      nameInput.setCustomValidity('');
     }
   } catch (error) {
-    result.textContent = error.message || 'Request failed.';
+    result.textContent = error.message || 'Request failed. Please try again.';
   } finally {
     button.disabled = false;
   }
