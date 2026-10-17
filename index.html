@@ -64,9 +64,18 @@
     <input id="num" name="num" type="tel" maxlength="30"
            autocomplete="tel" required>
 
-    <label for="business_name">Business name</label>
-    <input id="business_name" name="business_name"
-           maxlength="200" autocomplete="organization" required>
+  
+<label for="business_name">Business name</label>
+<input
+    id="business_name"
+    name="business_name"
+    type="text"
+    minlength="3"
+    maxlength="50"
+    required
+    autocomplete="organization"
+>
+
 
     <button id="submit" type="submit">Register</button>
   </form>
